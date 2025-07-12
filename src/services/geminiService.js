@@ -447,6 +447,246 @@ export async function testGeminiAPI() {
 }
 
 /**
+ * Rewrites a risky clause to be more user-friendly
+ * @param {string} clause - The risky clause to rewrite
+ * @returns {Promise<string>} - User-friendly rewritten version
+ */
+export async function rewriteClause(clause) {
+  console.log('rewriteClause called with clause length:', clause.length);
+
+  const apiCall = async (clause) => {
+    const prompt = `Rewrite this legal clause to be more user-friendly while keeping its legal intent intact. Make it clearer and more balanced for users:
+
+"${clause}"
+
+Provide only the rewritten clause without additional explanation:`;
+
+    console.log('Sending clause rewrite request to Gemini API...');
+    try {
+      const result = await generateWithGemini(prompt);
+      console.log('Received clause rewrite response from Gemini API');
+      return result.trim();
+    } catch (error) {
+      console.error('Clause rewrite with selected model failed:', error);
+      console.log(`Selected model ${SELECTED_MODEL} failed, trying other models`);
+      return await tryMultipleModels(prompt);
+    }
+  };
+
+  return withQuotaHandling(apiCall, () => `Rewritten version: ${clause} (Note: This is a mock response - API not available)`, clause);
+}
+
+/**
+ * Detects hidden traps in legal text
+ * @param {string} text - The legal text to analyze for hidden traps
+ * @returns {Promise<Array>} - Array of hidden traps with explanations
+ */
+export async function detectHiddenTraps(text) {
+  console.log('detectHiddenTraps called with text length:', text.length);
+
+  const apiCall = async (text) => {
+    const prompt = `Analyze this legal document for subtle risky patterns that could be "hidden traps" for users. Look for phrases like:
+- "at sole discretion"
+- "may change at any time"
+- "without notice"
+- "non-refundable"
+- "as we see fit"
+- "in our judgment"
+- "at our option"
+
+For each hidden trap found, provide:
+- The exact phrase/clause
+- A brief explanation of why it's concerning
+- The location context
+
+Format as JSON array with objects containing: "phrase", "explanation", "context"
+
+${text}`;
+
+    console.log('Sending hidden traps detection request to Gemini API...');
+    try {
+      const response = await generateWithGemini(prompt);
+      console.log('Received hidden traps response from Gemini API');
+
+      try {
+        const jsonMatch = response.match(/\[\s*\{.*\}\s*\]/s);
+        const jsonString = jsonMatch ? jsonMatch[0] : response;
+        return JSON.parse(jsonString);
+      } catch (parseError) {
+        console.error('Failed to parse hidden traps response as JSON:', parseError);
+        return [
+          {
+            phrase: "API parsing error",
+            explanation: "Could not parse the AI response properly.",
+            context: response.substring(0, 200) + "..."
+          }
+        ];
+      }
+    } catch (error) {
+      console.error('Hidden traps detection failed:', error);
+      return await tryMultipleModels(prompt);
+    }
+  };
+
+  return withQuotaHandling(apiCall, () => [
+    {
+      phrase: "at sole discretion",
+      explanation: "This allows the company to make decisions without user input or appeal.",
+      context: "Mock response - API not available"
+    }
+  ], text);
+}
+
+/**
+ * Analyzes data sharing practices in legal text
+ * @param {string} text - The legal text to analyze for data sharing
+ * @returns {Promise<Object>} - Data sharing analysis with nodes and connections
+ */
+export async function analyzeDataSharing(text) {
+  console.log('analyzeDataSharing called with text length:', text.length);
+
+  const apiCall = async (text) => {
+    const prompt = `Analyze this legal document for data sharing practices. Identify:
+
+1. First-party data use (how the company uses your data)
+2. Third-party sharing (who they share data with)
+3. Affiliates/partners/advertisers mentioned
+4. Types of data collected
+5. Purposes of data sharing
+
+Format as JSON with this structure:
+{
+  "nodes": [
+    {"id": "user", "label": "User Data", "type": "source"},
+    {"id": "company", "label": "Company Name", "type": "primary"},
+    {"id": "partner1", "label": "Partner Name", "type": "third-party"}
+  ],
+  "edges": [
+    {"from": "user", "to": "company", "label": "Personal Data", "clause": "exact clause text"},
+    {"from": "company", "to": "partner1", "label": "Analytics Data", "clause": "exact clause text"}
+  ]
+}
+
+${text}`;
+
+    console.log('Sending data sharing analysis request to Gemini API...');
+    try {
+      const response = await generateWithGemini(prompt);
+      console.log('Received data sharing analysis response from Gemini API');
+
+      try {
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        const jsonString = jsonMatch ? jsonMatch[0] : response;
+        return JSON.parse(jsonString);
+      } catch (parseError) {
+        console.error('Failed to parse data sharing response as JSON:', parseError);
+        return {
+          nodes: [
+            {id: "user", label: "User Data", type: "source"},
+            {id: "company", label: "Company", type: "primary"},
+            {id: "error", label: "Parse Error", type: "error"}
+          ],
+          edges: [
+            {from: "user", to: "company", label: "Data", clause: "Could not parse AI response"}
+          ]
+        };
+      }
+    } catch (error) {
+      console.error('Data sharing analysis failed:', error);
+      return await tryMultipleModels(prompt);
+    }
+  };
+
+  return withQuotaHandling(apiCall, () => ({
+    nodes: [
+      {id: "user", label: "User Data", type: "source"},
+      {id: "company", label: "Company", type: "primary"},
+      {id: "advertisers", label: "Advertisers", type: "third-party"}
+    ],
+    edges: [
+      {from: "user", to: "company", label: "Personal Data", clause: "Mock response - API not available"},
+      {from: "company", to: "advertisers", label: "Usage Data", clause: "Mock response - API not available"}
+    ]
+  }), text);
+}
+
+/**
+ * Analyzes user rights vs company rights in legal text
+ * @param {string} text - The legal text to analyze
+ * @returns {Promise<Object>} - Analysis of rights distribution with highlighted sections
+ */
+export async function analyzeUserRights(text) {
+  console.log('analyzeUserRights called with text length:', text.length);
+
+  const apiCall = async (text) => {
+    const prompt = `Analyze this legal document to identify:
+
+1. Clauses that grant user rights or protections (mark as "user-rights")
+2. Clauses that show company power or limit user rights (mark as "company-rights")
+3. Neutral clauses (mark as "neutral")
+
+For each clause, provide:
+- The exact text
+- Classification (user-rights, company-rights, neutral)
+- Brief explanation
+
+Format as JSON:
+{
+  "analysis": [
+    {"text": "exact clause text", "type": "user-rights", "explanation": "why this protects users"},
+    {"text": "exact clause text", "type": "company-rights", "explanation": "why this favors company"}
+  ],
+  "summary": {
+    "userRightsPercentage": 20,
+    "companyRightsPercentage": 60,
+    "neutralPercentage": 20
+  }
+}
+
+${text}`;
+
+    console.log('Sending user rights analysis request to Gemini API...');
+    try {
+      const response = await generateWithGemini(prompt);
+      console.log('Received user rights analysis response from Gemini API');
+
+      try {
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        const jsonString = jsonMatch ? jsonMatch[0] : response;
+        return JSON.parse(jsonString);
+      } catch (parseError) {
+        console.error('Failed to parse user rights response as JSON:', parseError);
+        return {
+          analysis: [
+            {text: "Parse error occurred", type: "neutral", explanation: "Could not parse AI response"}
+          ],
+          summary: {
+            userRightsPercentage: 0,
+            companyRightsPercentage: 0,
+            neutralPercentage: 100
+          }
+        };
+      }
+    } catch (error) {
+      console.error('User rights analysis failed:', error);
+      return await tryMultipleModels(prompt);
+    }
+  };
+
+  return withQuotaHandling(apiCall, () => ({
+    analysis: [
+      {text: "You may cancel your account at any time", type: "user-rights", explanation: "Gives users control over their account"},
+      {text: "We may terminate your account at our sole discretion", type: "company-rights", explanation: "Gives company unilateral power"}
+    ],
+    summary: {
+      userRightsPercentage: 25,
+      companyRightsPercentage: 75,
+      neutralPercentage: 0
+    }
+  }), text);
+}
+
+/**
  * Handles API quota exceeded errors by using mock service
  * @param {Function} apiCall - The API function to try
  * @param {Function} mockFallback - The mock function to use as fallback
@@ -475,7 +715,7 @@ async function withQuotaHandling(apiCall, mockFallback, ...args) {
     return result;
   } catch (error) {
     console.error('API error:', error.message);
-    
+
     // Check if it's a quota exceeded error
     if (error.message && error.message.includes('quota exceeded')) {
       console.log('Quota exceeded, falling back to mock service');
@@ -483,7 +723,7 @@ async function withQuotaHandling(apiCall, mockFallback, ...args) {
       usingMockData = true;
       return mockFallback(...args);
     }
-    
+
     // For other errors, try to use other models before falling back to mock
     try {
       console.log('Trying alternative models...');
@@ -502,6 +742,311 @@ async function withQuotaHandling(apiCall, mockFallback, ...args) {
 export function resetMockDataFlag() {
   usingMockData = false;
   console.log('Reset mock data flag, will try to use Gemini API again');
+}
+
+/**
+ * Explains selected text or complex terms in plain English
+ * @param {string} selectedText - The text to explain
+ * @param {string} context - Optional context from the document
+ * @returns {Promise<string>} - Plain English explanation
+ */
+/**
+ * Analyze ToS document for future risks and predictions
+ * @param {string} tosText - The Terms of Service text
+ * @param {string} companyName - Name of the company
+ * @returns {Promise<Object>} - Risk analysis and predictions
+ */
+export async function analyzeFutureRisks(tosText, companyName = '') {
+  console.log('analyzeFutureRisks called for company:', companyName);
+
+  const apiCall = async (tosText, companyName) => {
+    if (!GEMINI_API_KEY) {
+      throw new Error('API key is missing. Please add your Gemini API key.');
+    }
+
+    const prompt = `
+You are a legal expert specializing in Terms of Service analysis and future risk prediction. Analyze the following ToS document and provide a comprehensive risk forecast.
+
+Company: ${companyName || 'Unknown'}
+Terms of Service Text: ${tosText.substring(0, 3000)}...
+
+Please provide a detailed JSON response with the following structure:
+
+{
+  "riskForecast": {
+    "dataSharing": {
+      "level": "High|Medium|Low",
+      "description": "Analysis of data sharing risks",
+      "futureOutcome": "Possible future outcome statement"
+    },
+    "autoRenewal": {
+      "level": "High|Medium|Low",
+      "description": "Analysis of subscription/auto-renewal traps",
+      "futureOutcome": "Possible future outcome statement"
+    },
+    "arbitration": {
+      "level": "High|Medium|Low",
+      "description": "Analysis of arbitration clauses limiting legal action",
+      "futureOutcome": "Possible future outcome statement"
+    },
+    "pricing": {
+      "level": "High|Medium|Low",
+      "description": "Analysis of pricing and hidden fee risks",
+      "futureOutcome": "Possible future outcome statement"
+    }
+  },
+  "futureScenarios": [
+    {
+      "timeframe": "6 months|1 year|2 years",
+      "scenario": "Realistic future scenario description",
+      "probability": "High|Medium|Low"
+    }
+  ],
+  "companyPatterns": [
+    {
+      "similarCompany": "Company name",
+      "pattern": "Pattern description",
+      "warning": "Warning about potential future changes"
+    }
+  ],
+  "legalChanges": [
+    {
+      "law": "GDPR|CCPA|Other",
+      "impact": "How legal changes could affect current ToS",
+      "timeline": "When this might happen"
+    }
+  ]
+}
+
+Focus on realistic, evidence-based predictions. Be specific about risks and consequences.
+`;
+
+    try {
+      const result = await generateWithGemini(prompt);
+      // Try to parse as JSON, fallback to text if needed
+      try {
+        return JSON.parse(result);
+      } catch {
+        return { error: 'Could not parse AI response', rawResponse: result };
+      }
+    } catch (error) {
+      console.error('Future risk analysis failed:', error);
+      throw error;
+    }
+  };
+
+  return withQuotaHandling(apiCall, () => {
+    // Mock fallback for future risk analysis
+    return {
+      riskForecast: {
+        dataSharing: {
+          level: "Medium",
+          description: "Document contains clauses about sharing data with third parties for analytics and advertising",
+          futureOutcome: "Your personal data could be shared with unknown partners for marketing purposes"
+        },
+        autoRenewal: {
+          level: "High",
+          description: "Auto-renewal clauses with unclear cancellation process detected",
+          futureOutcome: "You could be charged indefinitely if you forget to cancel"
+        },
+        arbitration: {
+          level: "High",
+          description: "Mandatory arbitration clause limits your ability to take legal action",
+          futureOutcome: "You may not be able to sue the company in court for disputes"
+        },
+        pricing: {
+          level: "Medium",
+          description: "Pricing terms allow for changes with minimal notice",
+          futureOutcome: "Service costs could increase significantly with short notice"
+        }
+      },
+      futureScenarios: [
+        {
+          timeframe: "1 year",
+          scenario: "Introduction of mandatory ad personalization based on usage data",
+          probability: "High"
+        },
+        {
+          timeframe: "2 years",
+          scenario: "Data sharing expanded to include biometric information",
+          probability: "Medium"
+        }
+      ],
+      companyPatterns: [
+        {
+          similarCompany: "Similar Tech Company",
+          pattern: "Started with basic data collection, later expanded to comprehensive profiling",
+          warning: "This ToS resembles early versions that later became more invasive"
+        }
+      ],
+      legalChanges: [
+        {
+          law: "GDPR",
+          impact: "Current data collection practices may need to be restricted",
+          timeline: "Next 2 years"
+        }
+      ]
+    };
+  }, tosText, companyName);
+}
+
+/**
+ * Generate AI-powered "What If" scenario analysis
+ * @param {string} scenario - User's what-if question
+ * @param {string} tosContext - Relevant ToS context
+ * @returns {Promise<string>} - AI-generated consequence analysis
+ */
+export async function analyzeWhatIfScenario(scenario, tosContext = '') {
+  console.log('analyzeWhatIfScenario called with scenario:', scenario.substring(0, 100));
+
+  const apiCall = async (scenario, tosContext) => {
+    if (!GEMINI_API_KEY) {
+      throw new Error('API key is missing. Please add your Gemini API key.');
+    }
+
+    const prompt = `
+You are a legal expert analyzing Terms of Service implications. A user has asked a "what if" scenario question.
+
+User's Question: "${scenario}"
+
+Relevant ToS Context: ${tosContext.substring(0, 1000)}
+
+Please provide a detailed analysis of the potential consequences and implications based on the ToS. Include:
+
+1. **Immediate Consequences**: What would happen right away
+2. **Long-term Implications**: What could happen over time
+3. **Legal Rights**: How this affects the user's legal position
+4. **Recommendations**: What the user should consider or do
+
+Keep the response clear, practical, and focused on real-world implications.
+`;
+
+    try {
+      const result = await generateWithGemini(prompt);
+      return result;
+    } catch (error) {
+      console.error('What-if scenario analysis failed:', error);
+      throw error;
+    }
+  };
+
+  return withQuotaHandling(apiCall, () => {
+    // Mock fallback for what-if analysis
+    return `**Scenario Analysis: "${scenario}"**
+
+**Immediate Consequences:**
+Based on typical Terms of Service, this scenario could result in immediate account restrictions or service limitations.
+
+**Long-term Implications:**
+Your account status and data retention could be affected. The company may retain certain rights even after service discontinuation.
+
+**Legal Rights:**
+Your ability to dispute charges or data usage may be limited by arbitration clauses.
+
+**Recommendations:**
+Review the specific clauses related to your scenario and consider contacting customer service for clarification.
+
+*Note: This is a mock analysis. For accurate predictions, please provide a valid Gemini API key.*`;
+  }, scenario, tosContext);
+}
+
+export async function explainTextInPlainEnglish(selectedText, context = '') {
+  console.log('explainTextInPlainEnglish called with text:', selectedText.substring(0, 100));
+
+  const apiCall = async (selectedText, context) => {
+    // Ensure we have an API key
+    if (!GEMINI_API_KEY) {
+      console.error('No API key available for explainTextInPlainEnglish');
+      throw new Error('API key is missing. Please add your Gemini API key.');
+    }
+
+    // Create a prompt based on the selected model
+    let prompt;
+
+    // Check if it's a single word or short phrase (word translation)
+    const wordCount = selectedText.trim().split(/\s+/).length;
+    const isWordTranslation = wordCount <= 2;
+
+    if (isWordTranslation) {
+      // Simple word translation prompt
+      prompt = `Translate this legal term into plain English:
+
+"${selectedText}"
+
+Provide a simple, clear explanation that anyone can understand. Keep it brief and conversational.
+
+Format:
+**Plain English:** [simple explanation]
+**Why it matters:** [brief explanation of importance]`;
+    } else if (SELECTED_MODEL.includes('flash')) {
+      // More concise prompt for Flash models
+      prompt = `Explain this legal text in simple, easy-to-understand language:
+
+"${selectedText}"
+
+${context ? `Context: ${context.substring(0, 200)}...` : ''}
+
+Provide:
+1. What it means in plain English
+2. Why it matters to the user
+3. Any potential risks or benefits`;
+    } else {
+      // More detailed prompt for Pro models
+      prompt = `
+You are a legal expert who specializes in explaining complex legal language to everyday people.
+
+Please explain the following legal text in simple, clear language that anyone can understand:
+
+"${selectedText}"
+
+${context ? `Additional context from the document: ${context.substring(0, 300)}...` : ''}
+
+Please provide:
+1. A plain English explanation of what this text means
+2. Why this clause or term is important for users to understand
+3. Any potential risks, benefits, or implications for the user
+4. If applicable, suggest what users should look out for or consider
+
+Keep your explanation conversational and avoid legal jargon. Aim for a 6th-grade reading level.
+`;
+    }
+
+    console.log('Sending plain English explanation request to Gemini API...');
+    try {
+      const result = await generateWithGemini(prompt);
+      console.log('Received plain English explanation response from Gemini API');
+      return result;
+    } catch (error) {
+      console.error('Plain English explanation with selected model failed:', error);
+      // If the selected model fails, try other models
+      console.log(`Selected model ${SELECTED_MODEL} failed, trying other models`);
+      return await tryMultipleModels(prompt);
+    }
+  };
+
+  return withQuotaHandling(apiCall, () => {
+    // Mock fallback for plain English explanation
+    const wordCount = selectedText.trim().split(/\s+/).length;
+    const isWordTranslation = wordCount <= 2;
+
+    if (isWordTranslation) {
+      return `**Plain English:** The term "${selectedText}" is a legal word that has specific meaning in contracts and agreements.
+
+**Why it matters:** Understanding this term helps you know what you're agreeing to.
+
+**Note:** This is a mock translation. For accurate explanations, please provide a valid Gemini API key.`;
+    } else {
+      return `**Plain English Explanation:**
+
+The selected text "${selectedText.substring(0, 50)}${selectedText.length > 50 ? '...' : ''}" appears to be legal language that may have specific implications.
+
+**What it likely means:** This is a legal clause that defines certain terms, conditions, or obligations.
+
+**Why it matters:** Understanding this clause helps you know your rights and responsibilities.
+
+**Note:** This is a mock explanation. For accurate analysis, please provide a valid Gemini API key.`;
+    }
+  }, selectedText, context);
 }
 
 

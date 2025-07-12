@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { FiEye, FiSearch, FiFilter, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { FiEye, FiSearch, FiFilter, FiChevronDown, FiChevronUp, FiMousePointer } from 'react-icons/fi';
 import { containsSearchTerm } from './searchUtils';
 import HighlightedText from './HighlightedText';
+import WordTranslator from './WordTranslator';
 
 /**
  * Side-by-Side View Component
@@ -161,7 +162,10 @@ const SideBySideView = ({ analysis, searchTerm, selectedCategory }) => {
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {data.doc1Clauses?.map((clause, index) => (
                   <div key={index} className="p-3 bg-gray-800 border border-gray-600 rounded text-sm text-gray-300">
-                    <HighlightedText text={clause} searchTerm={searchTerm} />
+                    <WordTranslator
+                      text={clause}
+                      className="text-gray-300 text-sm leading-relaxed"
+                    />
                   </div>
                 ))}
               </div>
@@ -173,7 +177,10 @@ const SideBySideView = ({ analysis, searchTerm, selectedCategory }) => {
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {data.doc2Clauses?.map((clause, index) => (
                   <div key={index} className="p-3 bg-gray-800 border border-gray-600 rounded text-sm text-gray-300">
-                    <HighlightedText text={clause} searchTerm={searchTerm} />
+                    <WordTranslator
+                      text={clause}
+                      className="text-gray-300 text-sm leading-relaxed"
+                    />
                   </div>
                 ))}
               </div>
@@ -202,6 +209,10 @@ const SideBySideView = ({ analysis, searchTerm, selectedCategory }) => {
             />
             <span className="text-sm text-gray-300">Show only differences</span>
           </label>
+          <div className="flex items-center space-x-2 text-sm text-gray-400">
+            <FiMousePointer className="h-4 w-4" />
+            <span>Select any complex word for instant translation</span>
+          </div>
         </div>
       </div>
 
@@ -227,9 +238,12 @@ const SideBySideView = ({ analysis, searchTerm, selectedCategory }) => {
                     </span>
                     <span className="text-xs opacity-75">#{item.index}</span>
                   </div>
-                  <p className="text-sm leading-relaxed">
-                    <HighlightedText text={item.content} searchTerm={searchTerm} />
-                  </p>
+                  <div className="text-sm leading-relaxed">
+                    <WordTranslator
+                      text={item.content}
+                      className="text-gray-300 text-sm leading-relaxed"
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -252,9 +266,12 @@ const SideBySideView = ({ analysis, searchTerm, selectedCategory }) => {
                     </span>
                     <span className="text-xs opacity-75">#{item.index}</span>
                   </div>
-                  <p className="text-sm leading-relaxed">
-                    <HighlightedText text={item.content} searchTerm={searchTerm} />
-                  </p>
+                  <div className="text-sm leading-relaxed">
+                    <WordTranslator
+                      text={item.content}
+                      className="text-gray-300 text-sm leading-relaxed"
+                    />
+                  </div>
                 </div>
               ))}
             </div>

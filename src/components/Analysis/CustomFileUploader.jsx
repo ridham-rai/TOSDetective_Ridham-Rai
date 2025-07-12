@@ -1,5 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
-import { useDropzone } from 'react-dropzone';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { FiUpload, FiAlertCircle, FiKey } from 'react-icons/fi';
 import { extractTextFromPDF } from '../../services/pdfService';
@@ -14,17 +13,19 @@ import {
 import ApiKeySetup from './ApiKeySetup';
 import ApiKeyInput from './ApiKeyInput';
 
-function FileUploader({ onFileProcessed, setIsLoading, navigate }) {
+function CustomFileUploader({ onFileProcessed, setIsLoading, navigate, mode = 'full' }) {
   const [error, setError] = useState(null);
   const [warning, setWarning] = useState(null);
   const [showApiKeySetup, setShowApiKeySetup] = useState(false);
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+  const [isDragActive, setIsDragActive] = useState(false);
+  const fileInputRef = useRef(null);
   
   // Auto-set API key from environment on component mount
   useEffect(() => {
     const envApiKey = import.meta.env.VITE_GEMINI_API_KEY;
     console.log('Environment API key:', envApiKey ? 'Found' : 'Not found');
-
+    
     if (envApiKey) {
       setApiKey(envApiKey);
       setShowApiKeyInput(false);
@@ -32,39 +33,25 @@ function FileUploader({ onFileProcessed, setIsLoading, navigate }) {
     } else {
       const storedApiKey = localStorage.getItem('geminiApiKey');
       console.log('Stored API key:', storedApiKey ? 'Found' : 'Not found');
-
+      
       // Temporarily disable API key requirement for testing
       console.log('Temporarily skipping API key requirement for testing');
       setShowApiKeyInput(false);
       setWarning('Running in demo mode - API key not required for testing');
-
-      // if (!storedApiKey) {
-      //   console.log('No API key found, showing input');
-      //   setShowApiKeyInput(true);
-      // } else {
-      //   console.log('Using stored API key');
-      //   setApiKey(storedApiKey);
-      //   setShowApiKeyInput(false);
-      // }
     }
   }, []);
 
   // Handle API key submission
   const handleApiKeySubmit = (apiKey) => {
-    // Store API key in localStorage
     localStorage.setItem('geminiApiKey', apiKey);
-    // Update the API key in the service
     setApiKey(apiKey);
-    // Hide the API key input
     setShowApiKeyInput(false);
-    // Reset any errors
     setError(null);
   };
 
   // Helper function to read file as text
   const readFileAsText = (file) => {
     return new Promise((resolve, reject) => {
-      // Check if file is a valid Blob
       if (!(file instanceof Blob)) {
         console.error('Invalid file object:', file);
         reject(new Error('Invalid file object. Expected a Blob or File.'));
@@ -81,6 +68,34 @@ function FileUploader({ onFileProcessed, setIsLoading, navigate }) {
     });
   };
 
+  // Validate file type and size
+  const validateFile = (file) => {
+    const allowedTypes = [
+      'application/pdf',
+      'text/plain',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword'
+    ];
+    
+    const allowedExtensions = ['.pdf', '.txt', '.docx', '.doc'];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    
+    // Check file size
+    if (file.size > maxSize) {
+      throw new Error('File is too large. Please upload a file smaller than 10MB.');
+    }
+    
+    // Check file type
+    const isValidType = allowedTypes.includes(file.type) || 
+                       allowedExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+    
+    if (!isValidType) {
+      throw new Error('Invalid file type. Please upload a PDF, TXT, DOC, or DOCX file.');
+    }
+    
+    return true;
+  };
+
   // Handle file processing
   const processFile = useCallback(async (file) => {
     try {
@@ -89,6 +104,9 @@ function FileUploader({ onFileProcessed, setIsLoading, navigate }) {
       
       console.log('Processing file:', file.name);
       console.log('File type:', file.type);
+      
+      // Validate file
+      validateFile(file);
       
       let extractedText = '';
       
@@ -105,7 +123,6 @@ function FileUploader({ onFileProcessed, setIsLoading, navigate }) {
         file.name.toLowerCase().endsWith('.doc')
       ) {
         console.log('Processing Word document...');
-        // For now, try to read as text (this is a limitation - proper DOCX parsing would need a library)
         try {
           extractedText = await readFileAsText(file);
           if (!extractedText || extractedText.trim() === '') {
@@ -125,35 +142,30 @@ function FileUploader({ onFileProcessed, setIsLoading, navigate }) {
       console.log('Text extracted successfully, length:', extractedText.length);
       
       // Truncate text if it's too long
-      const maxLength = 100000; // Adjust based on Gemini's limits
+      const maxLength = 100000;
       const truncatedText = extractedText.length > maxLength 
         ? extractedText.substring(0, maxLength) + '... (text truncated due to length)'
         : extractedText;
       
-      console.log('Processing document with Gemini API...');
+      console.log('Processing document...');
       
-      // Check if we're in Future Predictor mode (no navigate prop means simpler processing)
-      if (!navigate) {
-        // Simple mode: just extract text for Future Predictor
+      // Check if we're in Future Predictor mode (simple processing)
+      if (mode === 'simple') {
         console.log('Simple text extraction for Future Predictor');
-
         const result = {
           file: file,
           content: extractedText
         };
-
         onFileProcessed(result);
       } else {
         // Full processing mode for other pages
         try {
-          // Check if we have an API key, if not use mock data
           const storedApiKey = localStorage.getItem('geminiApiKey');
           const envApiKey = import.meta.env.VITE_GEMINI_API_KEY;
-
+          
           let simplifiedTextResult, riskyClausesResult, summaryResult;
-
+          
           if (storedApiKey || envApiKey) {
-            // Process with real Gemini service
             console.log('Processing with Gemini API...');
             [simplifiedTextResult, riskyClausesResult, summaryResult] = await Promise.all([
               simplifyLegalText(truncatedText),
@@ -161,10 +173,9 @@ function FileUploader({ onFileProcessed, setIsLoading, navigate }) {
               summarizeLegalDocument(truncatedText)
             ]);
           } else {
-            // Use mock data for demonstration
             console.log('Using mock data for demonstration...');
             simplifiedTextResult = `This is a simplified version of your Terms of Service document:\n\n• You agree to use our service responsibly\n• We may collect and use your data as described\n• Our liability is limited\n• We can terminate your account if needed\n• These terms may change over time\n\nThis is a demo version. For full AI analysis, please provide an API key.`;
-
+            
             riskyClausesResult = [
               {
                 clause: "Limitation of Liability",
@@ -173,17 +184,16 @@ function FileUploader({ onFileProcessed, setIsLoading, navigate }) {
               },
               {
                 clause: "Data Collection",
-                risk: "Medium",
+                risk: "Medium", 
                 explanation: "The company may collect personal information. (Demo analysis)"
               }
             ];
-
+            
             summaryResult = "This Terms of Service document contains standard clauses about user responsibilities, data usage, and liability limitations. This is a demo analysis - for detailed AI-powered insights, please provide an API key.";
           }
 
           console.log('Document processed successfully');
 
-          // Create document object
           const document = {
             fileName: file.name,
             originalText: extractedText,
@@ -192,10 +202,8 @@ function FileUploader({ onFileProcessed, setIsLoading, navigate }) {
             summary: summaryResult
           };
 
-          // Pass the processed document to the parent component
           onFileProcessed(document);
 
-          // Navigate to the results page (only if navigate function is provided)
           if (navigate) {
             navigate('/results');
           }
@@ -211,63 +219,53 @@ function FileUploader({ onFileProcessed, setIsLoading, navigate }) {
       setIsLoading(false);
     }
   }, [setIsLoading, onFileProcessed, navigate]);
-  
-  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
-    onDrop: useCallback((acceptedFiles, rejectedFiles) => {
-      console.log('onDrop called with:', { acceptedFiles, rejectedFiles });
 
-      // Handle rejected files
-      if (rejectedFiles && rejectedFiles.length > 0) {
-        console.log('Rejected files:', rejectedFiles);
-        const rejectedFile = rejectedFiles[0];
-        const errors = rejectedFile.errors || [];
-        console.log('Rejection errors:', errors);
-
-        if (errors.some(e => e.code === 'file-invalid-type')) {
-          setError('Invalid file type. Please upload a PDF, TXT, DOC, or DOCX file.');
-        } else if (errors.some(e => e.code === 'file-too-large')) {
-          setError('File is too large. Please upload a file smaller than 10MB.');
-        } else {
-          setError('File upload failed. Please try again.');
-        }
-        return;
-      }
-
-      // Handle accepted files
-      if (acceptedFiles && acceptedFiles.length > 0) {
-        const file = acceptedFiles[0];
-        console.log('File accepted:', file.name, file.type, file.size);
-        setError(null); // Clear any previous errors
-        processFile(file);
-      } else {
-        console.log('No files accepted');
-      }
-    }, [processFile]),
-    accept: {
-      'application/pdf': ['.pdf'],
-      'text/plain': ['.txt'],
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-      'application/msword': ['.doc'],
-    },
-    maxFiles: 1,
-    multiple: false,
-    maxSize: 10 * 1024 * 1024, // 10MB limit
-    noClick: false, // Ensure clicking is enabled
-    noKeyboard: false, // Ensure keyboard access is enabled
-    onDropRejected: (rejectedFiles) => {
-      console.log('Files rejected in onDropRejected:', rejectedFiles);
-    },
-    onError: (error) => {
-      console.error('Dropzone error:', error);
-      setError('File upload error. Please try again.');
-    },
-    onFileDialogCancel: () => {
-      console.log('File dialog cancelled');
-    },
-    onFileDialogOpen: () => {
-      console.log('File dialog opened');
+  // Handle file selection
+  const handleFileSelect = (files) => {
+    console.log('handleFileSelect called with:', files);
+    if (files && files.length > 0) {
+      const file = files[0];
+      console.log('File selected:', file.name, file.type, file.size);
+      console.log('Mode:', mode);
+      setError(null);
+      processFile(file);
+    } else {
+      console.log('No files selected');
     }
-  });
+  };
+
+  // Handle file input change
+  const handleFileInputChange = (event) => {
+    console.log('File input changed:', event.target.files);
+    handleFileSelect(event.target.files);
+  };
+
+  // Handle drag events
+  const handleDragOver = (event) => {
+    event.preventDefault();
+    setIsDragActive(true);
+  };
+
+  const handleDragLeave = (event) => {
+    event.preventDefault();
+    setIsDragActive(false);
+  };
+
+  const handleDrop = (event) => {
+    event.preventDefault();
+    setIsDragActive(false);
+    handleFileSelect(event.dataTransfer.files);
+  };
+
+  // Handle click to open file dialog
+  const handleClick = () => {
+    console.log('Upload area clicked');
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    } else {
+      console.error('File input ref is null');
+    }
+  };
 
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -275,22 +273,28 @@ function FileUploader({ onFileProcessed, setIsLoading, navigate }) {
         <ApiKeySetup onClose={() => setShowApiKeySetup(false)} />
       ) : (
         <>
-          <div
-            {...getRootProps()}
+          <div 
             className="cursor-pointer"
-            onClick={(e) => {
-              console.log('Dropzone area clicked');
-              // Fallback: manually trigger file dialog if dropzone doesn't work
-              if (!isDragActive) {
-                open();
-              }
-            }}
+            onClick={handleClick}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
           >
-            <input {...getInputProps()} />
+            <input 
+              ref={fileInputRef}
+              type="file"
+              onChange={handleFileInputChange}
+              accept=".pdf,.txt,.doc,.docx"
+              style={{ display: 'none' }}
+            />
             <motion.div
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-blue-500 dark:hover:border-blue-400 transition-colors"
+              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                isDragActive 
+                  ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20' 
+                  : 'border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400'
+              }`}
             >
               <FiUpload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
               <p className="text-xl font-medium text-gray-700 dark:text-gray-200 mb-1">
@@ -304,7 +308,7 @@ function FileUploader({ onFileProcessed, setIsLoading, navigate }) {
               </p>
             </motion.div>
           </div>
-
+          
           {/* API key input */}
           {showApiKeyInput && (
             <div className="mt-4">
@@ -322,7 +326,7 @@ function FileUploader({ onFileProcessed, setIsLoading, navigate }) {
               </div>
             </div>
           )}
-
+          
           {/* Display any errors */}
           {error && (
             <div className="mt-4 p-3 bg-red-100 text-red-700 rounded flex items-start">
@@ -330,7 +334,7 @@ function FileUploader({ onFileProcessed, setIsLoading, navigate }) {
               <span>{error}</span>
             </div>
           )}
-
+          
           {/* Display any warnings */}
           {warning && (
             <div className="mt-4 p-3 bg-yellow-100 text-yellow-700 rounded flex items-start">
@@ -344,4 +348,4 @@ function FileUploader({ onFileProcessed, setIsLoading, navigate }) {
   );
 }
 
-export default FileUploader;
+export default CustomFileUploader;

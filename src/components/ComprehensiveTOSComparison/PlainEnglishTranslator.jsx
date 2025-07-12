@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FiInfo, FiAlertTriangle, FiCheckCircle, FiHelpCircle, FiEye, FiEyeOff, FiZap, FiTrendingUp } from 'react-icons/fi';
+import { FiInfo, FiAlertTriangle, FiCheckCircle, FiHelpCircle, FiEye, FiEyeOff, FiZap, FiTrendingUp, FiMousePointer, FiBookOpen } from 'react-icons/fi';
+import WordTranslator from './WordTranslator';
 
 /**
  * AI-Powered Plain English Translator
@@ -10,10 +11,32 @@ const PlainEnglishTranslator = ({ analysis }) => {
   const [showTranslations, setShowTranslations] = useState(true);
   const [isTranslating, setIsTranslating] = useState(false);
   const [selectedComplexity, setSelectedComplexity] = useState('simple'); // simple, detailed, expert
+  const [userExplanations, setUserExplanations] = useState([]);
 
   if (!analysis?.comprehensiveAnalysis) return null;
 
   const { comprehensiveAnalysis, file1Name, file2Name } = analysis;
+
+  /**
+   * Handle user text selection and explanation
+   */
+  const handleUserTextExplanation = (selectedText, explanation) => {
+    const newExplanation = {
+      id: Date.now(),
+      selectedText,
+      explanation,
+      timestamp: new Date().toLocaleTimeString()
+    };
+
+    setUserExplanations(prev => [newExplanation, ...prev.slice(0, 9)]); // Keep last 10 explanations
+  };
+
+  /**
+   * Clear user explanations
+   */
+  const clearUserExplanations = () => {
+    setUserExplanations([]);
+  };
 
   /**
    * Legal jargon patterns and their plain English translations
@@ -194,8 +217,20 @@ const PlainEnglishTranslator = ({ analysis }) => {
         </div>
         
         <p className="text-purple-200 mb-4">
-          Transform complex legal jargon into simple, understandable language. See what those confusing terms actually mean for you!
+          💡 <strong>How to use:</strong> Simply select any complex WORD (like "arbitration", "indemnification") to get instant plain English translation!
         </p>
+
+        {/* Clear History Button */}
+        {userExplanations.length > 0 && (
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={clearUserExplanations}
+              className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-md transition-colors"
+            >
+              Clear History ({userExplanations.length})
+            </button>
+          </div>
+        )}
 
         {/* Complexity Overview */}
         <div className="grid md:grid-cols-3 gap-4">
@@ -260,36 +295,63 @@ const PlainEnglishTranslator = ({ analysis }) => {
         </div>
       )}
 
+      {/* User Explanations History */}
+      {showTranslations && userExplanations.length > 0 && (
+        <div className="bg-gray-800 border border-gray-600 rounded-lg p-6">
+          <h3 className="text-lg font-medium text-white mb-4 flex items-center">
+            <FiBookOpen className="h-5 w-5 mr-2" />
+            Your Explanation History
+          </h3>
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            {userExplanations.map((item) => (
+              <div key={item.id} className="border border-gray-600 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-gray-400">
+                    Explained at {item.timestamp}
+                  </span>
+                </div>
+                <div className="mb-3 p-3 bg-gray-700 rounded-lg">
+                  <h4 className="text-sm font-medium text-gray-300 mb-1">Selected Text:</h4>
+                  <p className="text-sm text-white italic">"{item.selectedText}"</p>
+                </div>
+                <div className="prose prose-invert max-w-none">
+                  <div
+                    className="text-gray-300 text-sm leading-relaxed"
+                    dangerouslySetInnerHTML={{
+                      __html: item.explanation.replace(/\n/g, '<br />').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Document Translations */}
       {showTranslations && (
         <div className="space-y-6">
-          {/* Document 1 Translations */}
+          {/* Document 1 */}
           <div className="bg-gray-800 border border-gray-600 rounded-lg p-6">
             <h3 className="text-lg font-medium text-white mb-4">
-              Document 1 ({file1Name}) - Plain English Guide
+              Document 1 ({file1Name}) - Select Words for Translation
             </h3>
-            <TranslatedContent 
+            <WordDocumentContent
               clauses={comprehensiveAnalysis.clauseCategories}
               documentType="doc1"
-              analyzeAndTranslate={analyzeAndTranslate}
-              getRiskColor={getRiskColor}
-              getRiskIcon={getRiskIcon}
-              selectedComplexity={selectedComplexity}
+              onWordExplain={handleUserTextExplanation}
             />
           </div>
 
-          {/* Document 2 Translations */}
+          {/* Document 2 */}
           <div className="bg-gray-800 border border-gray-600 rounded-lg p-6">
             <h3 className="text-lg font-medium text-white mb-4">
-              Document 2 ({file2Name}) - Plain English Guide
+              Document 2 ({file2Name}) - Select Words for Translation
             </h3>
-            <TranslatedContent 
+            <WordDocumentContent
               clauses={comprehensiveAnalysis.clauseCategories}
               documentType="doc2"
-              analyzeAndTranslate={analyzeAndTranslate}
-              getRiskColor={getRiskColor}
-              getRiskIcon={getRiskIcon}
-              selectedComplexity={selectedComplexity}
+              onWordExplain={handleUserTextExplanation}
             />
           </div>
         </div>
@@ -406,6 +468,59 @@ const TranslatedContent = ({
           </div>
         );
       })}
+    </div>
+  );
+};
+
+/**
+ * Word Document Content Component
+ * Renders document content with word-by-word translation capability
+ */
+const WordDocumentContent = ({
+  clauses,
+  documentType,
+  onWordExplain
+}) => {
+  const documentClauses = [];
+
+  // Collect all clauses for the document
+  Object.entries(clauses || {}).forEach(([category, data]) => {
+    const clauseList = documentType === 'doc1' ? data.doc1Clauses : data.doc2Clauses;
+    clauseList?.forEach(clause => {
+      documentClauses.push({ category, clause });
+    });
+  });
+
+  if (documentClauses.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-400">
+        <FiInfo className="h-8 w-8 mx-auto mb-2 opacity-50" />
+        <p>No content found in this document</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-3 mb-4">
+        <p className="text-blue-200 text-sm">
+          💡 <strong>Tip:</strong> Select any complex word (like "arbitration", "indemnification", "liability") to get instant plain English translation!
+        </p>
+      </div>
+
+      {documentClauses.map((item, index) => (
+        <div key={index} className="border border-gray-600 rounded-lg p-4">
+          <div className="mb-3">
+            <span className="text-xs text-gray-400 uppercase tracking-wide">{item.category}</span>
+          </div>
+
+          <WordTranslator
+            text={item.clause}
+            className="text-gray-300 text-sm leading-relaxed"
+            onWordExplain={onWordExplain}
+          />
+        </div>
+      ))}
     </div>
   );
 };

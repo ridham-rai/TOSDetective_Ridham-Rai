@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiFileText, FiLayers, FiEye, FiShield } from 'react-icons/fi';
+import { FiFileText, FiLayers, FiEye, FiShield, FiClock } from 'react-icons/fi';
 
 function HomePage() {
   const features = [
@@ -27,6 +27,12 @@ function HomePage() {
       title: 'Risk Detection',
       description: 'Automatically identify potentially risky clauses and understand their implications.',
       link: '/analyze'
+    },
+    {
+      icon: <FiClock className="h-6 w-6 text-purple-500" />,
+      title: 'Future Predictor',
+      description: 'Predict future ToS changes and analyze long-term risks using AI-powered trend analysis.',
+      link: '/future-predictor'
     }
   ];
 

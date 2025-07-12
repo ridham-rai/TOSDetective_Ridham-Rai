@@ -1,16 +1,17 @@
-import React from 'react';
-import { FiSearch, FiFilter, FiX } from 'react-icons/fi';
+import React, { useState } from 'react';
+import { FiSearch, FiFilter, FiX, FiInfo, FiTrendingUp } from 'react-icons/fi';
 
 /**
  * Search and Filter Component
  * Provides search functionality and filtering options for TOS comparison
  */
-const SearchAndFilter = ({ 
-  searchTerm, 
-  selectedCategory, 
-  onSearchChange, 
-  onCategoryChange 
+const SearchAndFilter = ({
+  searchTerm,
+  selectedCategory,
+  onSearchChange,
+  onCategoryChange
 }) => {
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const categories = [
     { value: 'all', label: 'All Categories' },
     { value: 'privacy', label: 'Privacy & Data' },
@@ -22,6 +23,13 @@ const SearchAndFilter = ({
     { value: 'service', label: 'Service Terms' }
   ];
 
+  const searchSuggestions = [
+    'liability', 'privacy', 'data sharing', 'termination', 'dispute resolution',
+    'intellectual property', 'payment', 'refund', 'cancellation', 'arbitration',
+    'jurisdiction', 'limitation of liability', 'indemnification', 'force majeure',
+    'confidentiality', 'user content', 'third party', 'modification', 'suspension'
+  ];
+
   const clearSearch = () => {
     onSearchChange('');
   };
@@ -30,6 +38,16 @@ const SearchAndFilter = ({
     onSearchChange('');
     onCategoryChange('all');
   };
+
+  const handleSuggestionClick = (suggestion) => {
+    onSearchChange(suggestion);
+    setShowSuggestions(false);
+  };
+
+  const filteredSuggestions = searchSuggestions.filter(suggestion =>
+    suggestion.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    suggestion.toLowerCase() !== searchTerm.toLowerCase()
+  ).slice(0, 5);
 
   return (
     <div className="bg-gray-700 border border-gray-600 rounded-lg p-4">
@@ -40,9 +58,11 @@ const SearchAndFilter = ({
             <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search within documents..."
+              placeholder="Search for terms like 'liability', 'privacy', 'termination'..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               className="w-full pl-10 pr-10 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             {searchTerm && (
@@ -54,6 +74,27 @@ const SearchAndFilter = ({
               </button>
             )}
           </div>
+
+          {/* Search Suggestions */}
+          {showSuggestions && searchTerm && filteredSuggestions.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-10">
+              <div className="p-2">
+                <div className="text-xs text-gray-400 mb-2 flex items-center">
+                  <FiTrendingUp className="h-3 w-3 mr-1" />
+                  Suggestions
+                </div>
+                {filteredSuggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white rounded transition-colors"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Category Filter */}
@@ -115,15 +156,25 @@ const SearchAndFilter = ({
 
       {/* Search Tips */}
       <div className="mt-3 text-xs text-gray-400">
-        <p>
-          <strong>Search Tips:</strong> Search for specific terms like "liability", "privacy", or "termination".
-          Use filters to focus on specific clause categories. Search works across all document content and highlights matches.
-        </p>
-        {searchTerm && (
-          <p className="mt-1 text-blue-400">
-            <strong>Active Search:</strong> Currently searching for "{searchTerm}" - results are highlighted in yellow
-          </p>
-        )}
+        <div className="flex items-start space-x-2">
+          <FiInfo className="h-3 w-3 mt-0.5 flex-shrink-0" />
+          <div>
+            <p>
+              <strong>Search Tips:</strong> Search for legal terms, clause types, or specific concepts.
+              Results are highlighted across all views. Combine with category filters for precise results.
+            </p>
+            {searchTerm && (
+              <p className="mt-1 text-blue-400">
+                <strong>Active Search:</strong> "{searchTerm}" - {searchTerm.length < 3 ? 'Type at least 3 characters for better results' : 'Results highlighted in yellow'}
+              </p>
+            )}
+            {!searchTerm && (
+              <p className="mt-1 text-gray-500">
+                <strong>Popular searches:</strong> liability, privacy, termination, dispute resolution, intellectual property
+              </p>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

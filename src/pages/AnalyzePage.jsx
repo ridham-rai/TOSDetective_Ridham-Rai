@@ -1,8 +1,10 @@
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { FiUpload, FiCheckCircle, FiAlertTriangle, FiFileText, FiInfo } from 'react-icons/fi';
-import FileUploader from '../components/Analysis/FileUploader';
+import SimpleFileUploader from '../components/Analysis/SimpleFileUploader';
 import TextDisplay from '../components/Analysis/TextDisplay';
+import DataSharingMap from '../components/Analysis/DataSharingMap';
+import UserRightsHighlighter from '../components/Analysis/UserRightsHighlighter';
 // Import the real services
 import { simplifyLegalText, identifyRiskyClauses, summarizeLegalDocument } from '../services/geminiService';
 
@@ -89,7 +91,7 @@ function AnalyzePage() {
           </p>
         </div>
         
-        <FileUploader 
+        <SimpleFileUploader
           onFileProcessed={handleFileProcessed}
           setIsLoading={setIsLoading}
         />
@@ -130,6 +132,17 @@ function AnalyzePage() {
               simplifiedText={simplifiedText}
               riskyClauses={riskyClauses}
             />
+
+            {/* New Enhanced Features */}
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="mt-8 space-y-8"
+            >
+              <DataSharingMap originalText={originalText} />
+              <UserRightsHighlighter originalText={originalText} />
+            </motion.div>
           </motion.div>
         )}
       </motion.div>

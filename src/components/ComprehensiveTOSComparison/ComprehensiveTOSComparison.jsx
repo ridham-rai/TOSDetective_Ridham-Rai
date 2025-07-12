@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { FiUpload, FiFile, FiX, FiLoader, FiZap, FiAlertTriangle, FiSearch, FiFilter, FiBarChart2, FiEye, FiCpu, FiClock, FiShare2, FiBookOpen, FiTrendingUp } from 'react-icons/fi';
+import { FiUpload, FiFile, FiX, FiLoader, FiZap, FiAlertTriangle, FiSearch, FiFilter, FiBarChart2, FiEye, FiCpu, FiClock, FiShare2, FiBookOpen } from 'react-icons/fi';
 import { formatFileSize, getFileTypeDisplay } from '../../services/tosComparisonApi';
 import SummaryReport from './SummaryReport';
 import SideBySideView from './SideBySideView';
@@ -10,7 +10,6 @@ import AdvancedAnalytics from './AdvancedAnalytics';
 import InteractiveTimeline from './InteractiveTimeline';
 import ExportShare from './ExportShare';
 import PlainEnglishTranslator from './PlainEnglishTranslator';
-import TOSEvolutionPredictor from './TOSEvolutionPredictor';
 
 /**
  * Comprehensive TOS Comparison Component
@@ -228,7 +227,6 @@ const ComprehensiveTOSComparison = () => {
       { id: 'analytics', label: 'AI Analytics', icon: FiCpu },
       { id: 'timeline', label: 'Timeline', icon: FiClock },
       { id: 'plainenglish', label: 'Plain English', icon: FiBookOpen, badge: 'NEW' },
-      { id: 'evolution', label: 'Future Predictor', icon: FiTrendingUp, badge: 'NEW' },
       { id: 'export', label: 'Export & Share', icon: FiShare2 }
     ];
 
@@ -286,8 +284,6 @@ const ComprehensiveTOSComparison = () => {
         return <InteractiveTimeline {...commonProps} />;
       case 'plainenglish':
         return <PlainEnglishTranslator analysis={analysis} />;
-      case 'evolution':
-        return <TOSEvolutionPredictor analysis={analysis} />;
       case 'export':
         return <ExportShare {...commonProps} />;
       default:

@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { FiAlertTriangle, FiFileText, FiEye, FiCopy } from 'react-icons/fi';
 // Import the real Gemini service
 import { simplifyLegalText, identifyRiskyClauses, summarizeLegalDocument } from '../../services/geminiService';
+// Import the enhanced risky clause component
+import EnhancedRiskyClause from './EnhancedRiskyClause';
 
 function TextDisplay({ originalText, simplifiedText, riskyClauses, isPDFBinary }) {
   const [activeTab, setActiveTab] = useState('simplified');
@@ -208,41 +210,11 @@ function TextDisplay({ originalText, simplifiedText, riskyClauses, isPDFBinary }
             ) : (
               <div className="space-y-6">
                 {riskyClauses.map((clause, index) => (
-                  <div 
-                    key={index} 
-                    className={`p-4 rounded-lg border ${
-                      clause.riskLevel === 'High' ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' :
-                      clause.riskLevel === 'Medium' ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800' :
-                      'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
-                    }`}
-                  >
-                    <div className="flex items-start">
-                      <div className={`p-1 rounded-full mr-3 mt-1 ${
-                        clause.riskLevel === 'High' ? 'bg-red-100 dark:bg-red-800' :
-                        clause.riskLevel === 'Medium' ? 'bg-yellow-100 dark:bg-yellow-800' :
-                        'bg-blue-100 dark:bg-blue-800'
-                      }`}>
-                        <FiAlertTriangle className={`h-4 w-4 ${
-                          clause.riskLevel === 'High' ? 'text-red-600 dark:text-red-300' :
-                          clause.riskLevel === 'Medium' ? 'text-yellow-600 dark:text-yellow-300' :
-                          'text-blue-600 dark:text-blue-300'
-                        }`} />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className={`font-semibold text-gray-900 dark:text-white ${
-                          clause.riskLevel === 'High' ? 'text-red-700 dark:text-red-300' :
-                          clause.riskLevel === 'Medium' ? 'text-yellow-700 dark:text-yellow-300' :
-                          'text-blue-700 dark:text-blue-300'
-                        }`}>
-                          {clause.type || clause.category || 'Risk Detected'}
-                        </h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">{clause.explanation}</p>
-                        <div className="bg-white dark:bg-gray-700 p-3 rounded border border-gray-200 dark:border-gray-600 text-sm text-gray-800 dark:text-gray-200">
-                          {clause.clause || clause.text}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <EnhancedRiskyClause
+                    key={index}
+                    clause={clause}
+                    index={index}
+                  />
                 ))}
               </div>
             )}
