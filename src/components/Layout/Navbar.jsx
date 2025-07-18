@@ -11,7 +11,7 @@ function Navbar() {
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 w-full">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="text-white text-2xl font-bold">TOS Analyzer</Link>
+          <Link to="/" className="text-white text-2xl font-bold">TOS Analyzer v2.1</Link>
           
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center space-x-12">
@@ -30,8 +30,8 @@ function Navbar() {
             <Link to="/accessibility" className="text-gray-300 hover:text-white transition-colors text-lg font-medium">
               Accessibility
             </Link>
-            <Link to="/history" className="text-gray-300 hover:text-white transition-colors text-lg font-medium">
-              History
+            <Link to="/history" className="text-gray-300 hover:text-white transition-colors text-lg font-medium border border-gray-600 px-3 py-1 rounded">
+              📊 History
             </Link>
           </nav>
           
@@ -106,10 +106,10 @@ function Navbar() {
               </Link>
               <Link
                 to="/history"
-                className="text-gray-300 hover:text-white transition-colors text-lg font-medium"
+                className="text-gray-300 hover:text-white transition-colors text-lg font-medium border border-gray-600 px-3 py-1 rounded"
                 onClick={() => setIsMenuOpen(false)}
               >
-                History
+                📊 History
               </Link>
               <SignedOut>
                 <Link
