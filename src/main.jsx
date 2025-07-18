@@ -12,6 +12,7 @@ document.documentElement.classList.add('dark');
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || "pk_test_bGVhcm5pbmctc2NvcnBpb24tOTAuY2xlcmsuYWNjb3VudHMuZGV2JA";
 
 // Debug logging
+console.log("🕵️ TOSDetective v1.0.0 - Deployment Check:", new Date().toISOString());
 console.log("Environment check:", {
   hasClerkKey: !!publishableKey,
   keyLength: publishableKey?.length,
