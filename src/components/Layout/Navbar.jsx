@@ -1,6 +1,22 @@
 import { Link } from 'react-router-dom';
-import { SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
 import { FiLogIn } from 'react-icons/fi';
+
+// Conditionally import Clerk components
+let SignedIn, SignedOut, UserButton;
+try {
+  const clerkComponents = require('@clerk/clerk-react');
+  SignedIn = clerkComponents.SignedIn;
+  SignedOut = clerkComponents.SignedOut;
+  UserButton = clerkComponents.UserButton;
+} catch (error) {
+  // Clerk not available, create dummy components
+  SignedIn = ({ children }) => children;
+  SignedOut = ({ children }) => null;
+  UserButton = () => null;
+}
+
+// Check if Clerk is properly initialized
+const isClerkAvailable = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 function Navbar() {
   return (
@@ -27,32 +43,44 @@ function Navbar() {
             <Link to="/accessibility" className="text-gray-300 hover:text-white transition-colors text-lg font-medium">
               Accessibility
             </Link>
-            <SignedIn>
+            {isClerkAvailable ? (
+              <SignedIn>
+                <Link to="/history" className="text-gray-300 hover:text-white transition-colors text-lg font-medium">
+                  History
+                </Link>
+              </SignedIn>
+            ) : (
               <Link to="/history" className="text-gray-300 hover:text-white transition-colors text-lg font-medium">
                 History
               </Link>
-            </SignedIn>
+            )}
           </nav>
           
           {/* Auth Buttons */}
           <div className="flex items-center">
-            <SignedOut>
-              <Link to="/sign-in" className="flex items-center text-gray-300 hover:text-white transition-colors text-lg font-medium">
-                <FiLogIn className="mr-2" />
-                Sign In
-              </Link>
-            </SignedOut>
-            
-            <SignedIn>
-              <UserButton 
-                afterSignOutUrl="/"
-                appearance={{
-                  elements: {
-                    userButtonAvatarBox: "w-10 h-10"
-                  }
-                }}
-              />
-            </SignedIn>
+            {isClerkAvailable ? (
+              <>
+                <SignedOut>
+                  <Link to="/sign-in" className="flex items-center text-gray-300 hover:text-white transition-colors text-lg font-medium">
+                    <FiLogIn className="mr-2" />
+                    Sign In
+                  </Link>
+                </SignedOut>
+
+                <SignedIn>
+                  <UserButton
+                    afterSignOutUrl="/"
+                    appearance={{
+                      elements: {
+                        userButtonAvatarBox: "w-10 h-10"
+                      }
+                    }}
+                  />
+                </SignedIn>
+              </>
+            ) : (
+              <span className="text-gray-400 text-sm">Demo Mode</span>
+            )}
           </div>
         </div>
       </div>

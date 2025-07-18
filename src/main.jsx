@@ -11,18 +11,28 @@ document.documentElement.classList.add('dark');
 // Get your Clerk publishable key from environment variables
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
-if (!publishableKey) {
-  throw new Error("Missing Clerk publishable key");
-}
-
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <ClerkProvider publishableKey={publishableKey}>
+// Temporarily disable Clerk requirement for production deployment
+if (publishableKey) {
+  // Use Clerk if key is available
+  createRoot(document.getElementById('root')).render(
+    <StrictMode>
+      <ClerkProvider publishableKey={publishableKey}>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </ClerkProvider>
+    </StrictMode>,
+  )
+} else {
+  // Run without Clerk if key is not available
+  console.warn('Clerk publishable key not found. Running without authentication.');
+  createRoot(document.getElementById('root')).render(
+    <StrictMode>
       <BrowserRouter>
         <App />
       </BrowserRouter>
-    </ClerkProvider>
-  </StrictMode>,
-)
+    </StrictMode>,
+  )
+}
 
 
