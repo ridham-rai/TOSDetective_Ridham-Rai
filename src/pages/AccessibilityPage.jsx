@@ -82,7 +82,7 @@ function AccessibilityPage() {
           <motion.h1
             initial={{ y: -20 }}
             animate={{ y: 0 }}
-            className="text-3xl font-bold text-gray-900 dark:text-white"
+            className="text-3xl font-bold text-white"
           >
             Accessibility Settings
           </motion.h1>
