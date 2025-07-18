@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
 import { FiLogIn } from 'react-icons/fi';
 
 function Navbar() {
@@ -26,14 +27,32 @@ function Navbar() {
             <Link to="/accessibility" className="text-gray-300 hover:text-white transition-colors text-lg font-medium">
               Accessibility
             </Link>
-            <Link to="/history" className="text-gray-300 hover:text-white transition-colors text-lg font-medium">
-              History
-            </Link>
+            <SignedIn>
+              <Link to="/history" className="text-gray-300 hover:text-white transition-colors text-lg font-medium">
+                History
+              </Link>
+            </SignedIn>
           </nav>
           
-          {/* Demo Mode Indicator */}
+          {/* Auth Buttons */}
           <div className="flex items-center">
-            <span className="text-gray-400 text-sm">Demo Mode</span>
+            <SignedOut>
+              <Link to="/sign-in" className="flex items-center text-gray-300 hover:text-white transition-colors text-lg font-medium">
+                <FiLogIn className="mr-2" />
+                Sign In
+              </Link>
+            </SignedOut>
+
+            <SignedIn>
+              <UserButton
+                afterSignOutUrl="/"
+                appearance={{
+                  elements: {
+                    userButtonAvatarBox: "w-10 h-10"
+                  }
+                }}
+              />
+            </SignedIn>
           </div>
         </div>
       </div>
