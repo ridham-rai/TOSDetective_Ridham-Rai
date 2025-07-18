@@ -11,7 +11,7 @@ function Navbar() {
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 w-full">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="text-white text-2xl font-bold tracking-wide">🕵️ TOSDetective</Link>
+          <Link to="/" className="text-white text-2xl font-bold tracking-wide hover:text-blue-300 transition-colors">🕵️ TOSDetective</Link>
           
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center space-x-12">
