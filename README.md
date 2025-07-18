@@ -1,4 +1,4 @@
-# 🚀 Revolutionary TOS Analyzer
+# 🕵️ TOSDetective
 
 > **The world's most advanced Terms of Service comparison tool with AI-powered Plain English translation and future change prediction.**
 
@@ -11,7 +11,7 @@
 
 ### 🎯 **What Makes This Project Unique**
 
-This TOS Analyzer includes **TWO GROUNDBREAKING FEATURES** that no other tool in the market has:
+TOSDetective includes **TWO GROUNDBREAKING FEATURES** that no other tool in the market has:
 
 #### 📖 **1. AI Plain English Translator** ⭐ **REVOLUTIONARY**
 - **Real-time translation** of complex legal jargon into simple, understandable language

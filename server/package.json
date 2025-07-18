@@ -1,7 +1,7 @@
 {
-  "name": "tos-analyzer-server",
+  "name": "tosdetective-server",
   "version": "1.0.0",
-  "description": "Backend server for TOS Analyzer application",
+  "description": "Backend server for TOSDetective application",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
