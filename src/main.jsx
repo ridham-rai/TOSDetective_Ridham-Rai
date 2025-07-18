@@ -12,6 +12,7 @@ document.documentElement.classList.add('dark');
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 if (!publishableKey) {
+  console.error("Missing Clerk publishable key. Please check Railway environment variables.");
   throw new Error("Missing Clerk publishable key");
 }
 
