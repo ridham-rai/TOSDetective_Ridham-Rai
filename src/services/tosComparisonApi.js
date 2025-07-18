@@ -3,7 +3,7 @@
  * Handles API calls to the backend for document comparison
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://tosdetectiveridham-rai-production.up.railway.app';
 
 /**
  * Compare two TOS documents
